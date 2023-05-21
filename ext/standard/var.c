@@ -154,13 +154,6 @@ again:
 				return;
 			}
 
-			if (ce->ce_flags & ZEND_ACC_TYPE) {
-				zend_string *type_str = zend_type_to_string(ce->type_type);
-				php_printf("%stype %s : %s\n", COMMON, ZSTR_VAL(ce->name), ZSTR_VAL(type_str));
-				zend_string_release(type_str);
-				return;
-			}
-
 			if (Z_IS_RECURSIVE_P(struc)) {
 				PUTS("*RECURSION*\n");
 				return;

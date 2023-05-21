@@ -7929,7 +7929,7 @@ static void zend_compile_type_type(zend_class_entry *ce, zend_ast *type_type_ast
 
 	if (ZEND_TYPE_FULL_MASK(type) & (MAY_BE_VOID|MAY_BE_NEVER)) {
 		zend_string *str = zend_type_to_string(type);
-		zend_error_noreturn(E_COMPILE_ERROR, "Type cannot have type %s", ZSTR_VAL(str));
+		zend_error_noreturn(E_COMPILE_ERROR, "Type alias cannot have type %s", ZSTR_VAL(str));
 	}
 
 	ce->type_type = type;

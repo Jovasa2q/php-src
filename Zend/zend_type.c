@@ -30,9 +30,9 @@ static int zend_implement_type(zend_class_entry *interface, zend_class_entry *cl
 		return SUCCESS;
 	}
 
-	zend_error_noreturn(E_ERROR, "Non-type class %s cannot implement interface %s",
-						ZSTR_VAL(class_type->name),
-						ZSTR_VAL(interface->name));
+	zend_error_noreturn(E_ERROR, "Non-type alias class %s cannot implement interface %s",
+		ZSTR_VAL(class_type->name),
+		ZSTR_VAL(interface->name));
 
 	return FAILURE;
 }

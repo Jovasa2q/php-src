@@ -1,11 +1,9 @@
 --TEST--
-Type: Syntax
+Type Alias: type aliases implement TypeAlias
 --FILE--
 <?php
 type Foo = int | string;
 
-$t = new Foo;
-
-var_dump($t);
+var_dump(is_a(Foo::class, \TypeAlias::class, true));
 --EXPECT--
-type Foo : string|int
+bool(true)
