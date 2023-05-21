@@ -1833,6 +1833,13 @@ tail_call:
 				smart_str_appends(str, "trait ");
 			} else if (decl->flags & ZEND_ACC_ENUM) {
 				smart_str_appends(str, "enum ");
+			} else if (decl->flags & ZEND_ACC_TYPE) {
+				smart_str_appends(str, "type ");
+				smart_str_appendl(str, ZSTR_VAL(decl->name), ZSTR_LEN(decl->name));
+				smart_str_appends(str, " = ");
+				zend_ast_export_type(str, decl->child[4], 0);
+				smart_str_appends(str, ";\n");
+				break;
 			} else {
 				if (decl->flags & ZEND_ACC_EXPLICIT_ABSTRACT_CLASS) {
 					smart_str_appends(str, "abstract ");
