@@ -22,7 +22,7 @@
  *
  */
 /*
- * The source code included in this files was separated from mbfilter_tw.c
+ * The source code included in this file was separated from mbfilter_tw.c
  * by moriyoshi koizumi <moriyoshi@php.net> on 4 dec 2002.
  *
  */
@@ -69,7 +69,8 @@ const mbfl_encoding mbfl_encoding_big5 = {
 	&vtbl_big5_wchar,
 	&vtbl_wchar_big5,
 	mb_big5_to_wchar,
-	mb_wchar_to_big5
+	mb_wchar_to_big5,
+	NULL
 };
 
 const mbfl_encoding mbfl_encoding_cp950 = {
@@ -82,7 +83,8 @@ const mbfl_encoding mbfl_encoding_cp950 = {
 	&vtbl_cp950_wchar,
 	&vtbl_wchar_cp950,
 	mb_cp950_to_wchar,
-	mb_wchar_to_cp950
+	mb_wchar_to_cp950,
+	NULL
 };
 
 const struct mbfl_convert_vtbl vtbl_big5_wchar = {

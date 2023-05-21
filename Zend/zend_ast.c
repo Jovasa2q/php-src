@@ -712,8 +712,8 @@ ZEND_API zend_result ZEND_FASTCALL zend_ast_evaluate_inner(
 			if (UNEXPECTED(zend_ast_evaluate_ex(&op2, ast->child[0], scope, &short_circuited, ctx) != SUCCESS)) {
 				ret = FAILURE;
 			} else {
-				ZVAL_LONG(&op1, 0);
-				ret = sub_function(result, &op1, &op2);
+				ZVAL_LONG(&op1, -1);
+				ret = mul_function(result, &op1, &op2);
 				zval_ptr_dtor_nogc(&op2);
 			}
 			break;
@@ -1063,8 +1063,8 @@ static void* ZEND_FASTCALL zend_ast_tree_copy(zend_ast *ast, void *buf)
 		new->kind = ZEND_AST_ZVAL;
 		new->attr = ast->attr;
 		ZVAL_COPY(&new->val, zend_ast_get_zval(ast));
+		Z_LINENO(new->val) = zend_ast_get_lineno(ast);
 		buf = (void*)((char*)buf + sizeof(zend_ast_zval));
-		// Lineno gets copied with ZVAL_COPY
 	} else if (ast->kind == ZEND_AST_CONSTANT) {
 		zend_ast_zval *new = (zend_ast_zval*)buf;
 		new->kind = ZEND_AST_CONSTANT;

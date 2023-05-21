@@ -450,7 +450,7 @@ static int X509_get_signature_nid(const X509 *x)
 	PHP_OPENSSL_CHECK_NUMBER_CONVERSION_NULL_RETURN(ZEND_LONG_EXCEEDS_INT(_var), _name)
 
 /* {{{ php_openssl_store_errors */
-void php_openssl_store_errors()
+void php_openssl_store_errors(void)
 {
 	struct php_openssl_errors *errors;
 	int error_code = ERR_get_error();
@@ -473,6 +473,37 @@ void php_openssl_store_errors()
 		errors->buffer[errors->top] = error_code;
 	} while ((error_code = ERR_get_error()));
 
+}
+/* }}} */
+
+/* {{{ php_openssl_errors_set_mark */
+void php_openssl_errors_set_mark(void) {
+	if (!OPENSSL_G(errors)) {
+		return;
+	}
+
+	if (!OPENSSL_G(errors_mark)) {
+		OPENSSL_G(errors_mark) = pecalloc(1, sizeof(struct php_openssl_errors), 1);
+	}
+
+	memcpy(OPENSSL_G(errors_mark), OPENSSL_G(errors), sizeof(struct php_openssl_errors));
+}
+/* }}} */
+
+/* {{{ php_openssl_errors_restore_mark */
+void php_openssl_errors_restore_mark(void) {
+	if (!OPENSSL_G(errors)) {
+		return;
+	}
+
+	struct php_openssl_errors *errors = OPENSSL_G(errors);
+
+	if (!OPENSSL_G(errors_mark)) {
+		errors->top = 0;
+		errors->bottom = 0;
+	} else {
+		memcpy(errors, OPENSSL_G(errors_mark), sizeof(struct php_openssl_errors));
+	}
 }
 /* }}} */
 
@@ -1293,6 +1324,7 @@ PHP_GINIT_FUNCTION(openssl)
 	ZEND_TSRMLS_CACHE_UPDATE();
 #endif
 	openssl_globals->errors = NULL;
+	openssl_globals->errors_mark = NULL;
 }
 /* }}} */
 
@@ -1301,6 +1333,9 @@ PHP_GSHUTDOWN_FUNCTION(openssl)
 {
 	if (openssl_globals->errors) {
 		pefree(openssl_globals->errors, 1);
+	}
+	if (openssl_globals->errors_mark) {
+		pefree(openssl_globals->errors_mark, 1);
 	}
 }
 /* }}} */
@@ -1672,7 +1707,7 @@ cleanup:
 PHP_FUNCTION(openssl_spki_export)
 {
 	size_t spkstr_len;
-	char *spkstr, * spkstr_cleaned = NULL, * s = NULL;
+	char *spkstr, * spkstr_cleaned = NULL;
 	int spkstr_cleaned_len;
 
 	EVP_PKEY *pkey = NULL;
@@ -1726,9 +1761,6 @@ cleanup:
 	EVP_PKEY_free(pkey);
 	if (spkstr_cleaned != NULL) {
 		efree(spkstr_cleaned);
-	}
-	if (s != NULL) {
-		efree(s);
 	}
 }
 /* }}} */
@@ -2600,11 +2632,13 @@ PHP_FUNCTION(openssl_pkcs12_export_to_file)
 	if (p12 != NULL) {
 		bio_out = BIO_new_file(file_path, PHP_OPENSSL_BIO_MODE_W(PKCS7_BINARY));
 		if (bio_out != NULL) {
-
-			i2d_PKCS12_bio(bio_out, p12);
+			if (i2d_PKCS12_bio(bio_out, p12) == 0) {
+				php_openssl_store_errors();
+				php_error_docref(NULL, E_WARNING, "Error writing to file %s", file_path);
+			} else {
+				RETVAL_TRUE;
+			}
 			BIO_free(bio_out);
-
-			RETVAL_TRUE;
 		} else {
 			php_openssl_store_errors();
 			php_error_docref(NULL, E_WARNING, "Error opening file %s", file_path);
@@ -3572,12 +3606,14 @@ static EVP_PKEY *php_openssl_pkey_from_zval(
 		}
 		/* it's an X509 file/cert of some kind, and we need to extract the data from that */
 		if (public_key) {
+            php_openssl_errors_set_mark();
 			cert = php_openssl_x509_from_str(Z_STR_P(val), arg_num, false, NULL);
 
 			if (cert) {
 				free_cert = 1;
 			} else {
 				/* not a X509 certificate, try to retrieve public key */
+				php_openssl_errors_restore_mark();
 				BIO* in;
 				if (is_file) {
 					in = BIO_new_file(file_path, PHP_OPENSSL_BIO_MODE_R(PKCS7_BINARY));
@@ -5288,7 +5324,11 @@ PHP_FUNCTION(openssl_pkcs7_verify)
 			}
 
 			if (p7bout) {
-				PEM_write_bio_PKCS7(p7bout, p7);
+				if (PEM_write_bio_PKCS7(p7bout, p7) == 0) {
+					php_error_docref(NULL, E_WARNING, "Failed to write PKCS7 to file");
+					php_openssl_store_errors();
+					RETVAL_FALSE;
+				}
 			}
 		}
 	} else {
@@ -5873,7 +5913,11 @@ PHP_FUNCTION(openssl_cms_verify)
 			}
 
 			if (p7bout) {
-				PEM_write_bio_CMS(p7bout, cms);
+				if (PEM_write_bio_CMS(p7bout, cms) == 0) {
+					php_error_docref(NULL, E_WARNING, "Failed to write CMS to file");
+					php_openssl_store_errors();
+					RETVAL_FALSE;
+				}
 			}
 		}
 	} else {

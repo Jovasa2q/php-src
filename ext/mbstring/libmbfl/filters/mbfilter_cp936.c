@@ -22,7 +22,7 @@
  *
  */
 /*
- * the source code included in this files was separated from mbfilter_cn.c
+ * the source code included in this file was separated from mbfilter_cn.c
  * by moriyoshi koizumi <moriyoshi@php.net> on 4 dec 2002.
  *
  */
@@ -68,7 +68,8 @@ const mbfl_encoding mbfl_encoding_cp936 = {
 	&vtbl_cp936_wchar,
 	&vtbl_wchar_cp936,
 	mb_cp936_to_wchar,
-	mb_wchar_to_cp936
+	mb_wchar_to_cp936,
+	NULL
 };
 
 const struct mbfl_convert_vtbl vtbl_cp936_wchar = {

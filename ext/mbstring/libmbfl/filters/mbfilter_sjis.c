@@ -22,7 +22,7 @@
  *
  */
 /*
- * The source code included in this files was separated from mbfilter_ja.c
+ * The source code included in this file was separated from mbfilter_ja.c
  * by moriyoshi koizumi <moriyoshi@php.net> on 4 dec 2002.
  *
  */
@@ -130,7 +130,8 @@ const mbfl_encoding mbfl_encoding_sjis = {
 	&vtbl_sjis_wchar,
 	&vtbl_wchar_sjis,
 	mb_sjis_to_wchar,
-	mb_wchar_to_sjis
+	mb_wchar_to_sjis,
+	NULL
 };
 
 const struct mbfl_convert_vtbl vtbl_sjis_wchar = {
@@ -165,7 +166,8 @@ const mbfl_encoding mbfl_encoding_sjis_mac = {
 	&vtbl_sjis_mac_wchar,
 	&vtbl_wchar_sjis_mac,
 	mb_sjismac_to_wchar,
-	mb_wchar_to_sjismac
+	mb_wchar_to_sjismac,
+	NULL
 };
 
 const struct mbfl_convert_vtbl vtbl_sjis_mac_wchar = {
@@ -202,7 +204,8 @@ const mbfl_encoding mbfl_encoding_sjis_docomo = {
 	&vtbl_sjis_docomo_wchar,
 	&vtbl_wchar_sjis_docomo,
 	mb_sjis_docomo_to_wchar,
-	mb_wchar_to_sjis_docomo
+	mb_wchar_to_sjis_docomo,
+	NULL
 };
 
 const mbfl_encoding mbfl_encoding_sjis_kddi = {
@@ -215,7 +218,8 @@ const mbfl_encoding mbfl_encoding_sjis_kddi = {
 	&vtbl_sjis_kddi_wchar,
 	&vtbl_wchar_sjis_kddi,
 	mb_sjis_kddi_to_wchar,
-	mb_wchar_to_sjis_kddi
+	mb_wchar_to_sjis_kddi,
+	NULL
 };
 
 const mbfl_encoding mbfl_encoding_sjis_sb = {
@@ -228,7 +232,8 @@ const mbfl_encoding mbfl_encoding_sjis_sb = {
 	&vtbl_sjis_sb_wchar,
 	&vtbl_wchar_sjis_sb,
 	mb_sjis_sb_to_wchar,
-	mb_wchar_to_sjis_sb
+	mb_wchar_to_sjis_sb,
+	NULL
 };
 
 const struct mbfl_convert_vtbl vtbl_sjis_docomo_wchar = {
@@ -1395,8 +1400,8 @@ process_codepoint: ;
 						/* This might be a valid transcoding hint sequence */
 						int index = 3;
 
-resume_transcoding_hint:
 						if (buf->state) {
+resume_transcoding_hint:
 							i = buf->state >> 24;
 							index = (buf->state >> 16) & 0xFF;
 							buf->state = 0;
@@ -2250,11 +2255,7 @@ static void mb_wchar_to_sjis_docomo(uint32_t *in, size_t len, mb_convert_buf *bu
 		/* Continue what we were doing on the previous call */
 		w = buf->state;
 		buf->state = 0;
-		if (len) {
-			goto reprocess_wchar;
-		} else {
-			goto emit_output;
-		}
+		goto reprocess_wchar;
 	}
 
 	while (len--) {
@@ -2482,11 +2483,7 @@ static void mb_wchar_to_sjis_kddi(uint32_t *in, size_t len, mb_convert_buf *buf,
 	if (buf->state) {
 		w = buf->state;
 		buf->state = 0;
-		if (len) {
-			goto reprocess_wchar;
-		} else {
-			goto emit_output;
-		}
+		goto reprocess_wchar;
 	}
 
 	while (len--) {
@@ -2793,11 +2790,7 @@ static void mb_wchar_to_sjis_sb(uint32_t *in, size_t len, mb_convert_buf *buf, b
 	if (buf->state) {
 		w = buf->state;
 		buf->state = 0;
-		if (len) {
-			goto reprocess_wchar;
-		} else {
-			goto emit_output;
-		}
+		goto reprocess_wchar;
 	}
 
 	while (len--) {

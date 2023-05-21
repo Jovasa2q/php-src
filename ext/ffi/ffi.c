@@ -1838,7 +1838,7 @@ static zend_object* zend_ffi_add(zend_ffi_cdata *base_cdata, zend_ffi_type *base
 }
 /* }}} */
 
-static zend_result zend_ffi_cdata_do_operation(zend_uchar opcode, zval *result, zval *op1, zval *op2) /* {{{ */
+static zend_result zend_ffi_cdata_do_operation(uint8_t opcode, zval *result, zval *op1, zval *op2) /* {{{ */
 {
 	zend_long offset;
 
@@ -5538,7 +5538,7 @@ static const zend_ffi_type zend_ffi_type_long_double = {.kind=ZEND_FFI_TYPE_LONG
 
 static const zend_ffi_type zend_ffi_type_ptr = {.kind=ZEND_FFI_TYPE_POINTER, .size=sizeof(void*), .align=_Alignof(void*), .pointer.type = (zend_ffi_type*)&zend_ffi_type_void};
 
-const struct {
+static const struct {
 	const char *name;
 	const zend_ffi_type *type;
 } zend_ffi_types[] = {

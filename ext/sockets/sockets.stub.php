@@ -173,6 +173,13 @@ const SO_REUSEADDR = UNKNOWN;
  */
 const SO_REUSEPORT = UNKNOWN;
 #endif
+#ifdef SO_REUSEPORT_LB
+/**
+ * @var int
+ * @cvalue SO_REUSEPORT_LB
+ */
+const SO_REUSEPORT_LB = UNKNOWN;
+#endif
 /**
  * @var int
  * @cvalue SO_KEEPALIVE
@@ -635,6 +642,13 @@ const IP_MULTICAST_TTL = UNKNOWN;
  * @cvalue IP_MULTICAST_LOOP
  */
 const IP_MULTICAST_LOOP = UNKNOWN;
+#ifdef IP_BIND_ADDRESS_NO_PORT
+/**
+ * @var int
+ * @cvalue IP_BIND_ADDRESS_NO_PORT
+ */
+const IP_BIND_ADDRESS_NO_PORT = UNKNOWN;
+#endif
 #if HAVE_IPV6
 /**
  * @var int
@@ -1740,6 +1754,13 @@ const SO_DETACH_BPF = UNKNOWN;
  * @cvalue TCP_QUICKACK
  */
 const TCP_QUICKACK = UNKNOWN;
+#endif
+#if defined(TCP_REPAIR)
+/**
+ * @var int
+ * @cvalue TCP_REPAIR
+ */
+const TCP_REPAIR = UNKNOWN;
 #endif
 #if defined(IP_DONTFRAG)
 /**

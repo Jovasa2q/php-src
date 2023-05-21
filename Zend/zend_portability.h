@@ -701,7 +701,7 @@ extern "C++" {
 # define ZEND_SET_ALIGNED(alignment, decl) decl
 #endif
 
-#define ZEND_SLIDE_TO_ALIGNED(alignment, ptr) (((zend_uintptr_t)(ptr) + ((alignment)-1)) & ~((alignment)-1))
+#define ZEND_SLIDE_TO_ALIGNED(alignment, ptr) (((uintptr_t)(ptr) + ((alignment)-1)) & ~((alignment)-1))
 #define ZEND_SLIDE_TO_ALIGNED16(ptr) ZEND_SLIDE_TO_ALIGNED(Z_UL(16), ptr)
 
 #ifdef ZEND_WIN32
@@ -735,6 +735,25 @@ extern "C++" {
 # define ZEND_INDIRECT_RETURN __attribute__((__indirect_return__))
 #else
 # define ZEND_INDIRECT_RETURN
+#endif
+
+#if __GNUC__ && !defined(__clang__)
+# define __DO_PRAGMA(x) _Pragma(#x)
+# define _DO_PRAGMA(x) __DO_PRAGMA(x)
+# define ZEND_CGG_DIAGNOSTIC_IGNORED_START(warning) \
+	_Pragma("GCC diagnostic push") \
+	_DO_PRAGMA(GCC diagnostic ignored warning)
+# define ZEND_CGG_DIAGNOSTIC_IGNORED_END \
+	_Pragma("GCC diagnostic pop")
+#else
+# define ZEND_CGG_DIAGNOSTIC_IGNORED_START(warning)
+# define ZEND_CGG_DIAGNOSTIC_IGNORED_END
+#endif
+
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L) /* C11 */
+# define ZEND_STATIC_ASSERT(c, m) _Static_assert((c), m)
+#else
+# define ZEND_STATIC_ASSERT(c, m)
 #endif
 
 #endif /* ZEND_PORTABILITY_H */

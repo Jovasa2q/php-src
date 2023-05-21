@@ -36,6 +36,7 @@
 #include "zend_observer.h"
 #include "zend_fibers.h"
 #include "zend_call_stack.h"
+#include "zend_max_execution_timer.h"
 #include "Optimizer/zend_optimizer.h"
 
 static size_t global_map_ptr_last = 0;
@@ -223,7 +224,7 @@ static ZEND_INI_MH(OnUpdateReservedStackSize) /* {{{ */
 static ZEND_INI_MH(OnUpdateFiberStackSize) /* {{{ */
 {
 	if (new_value) {
-		EG(fiber_stack_size) = zend_ini_parse_quantity_warn(new_value, entry->name);
+		EG(fiber_stack_size) = zend_ini_parse_uquantity_warn(new_value, entry->name);
 	} else {
 		EG(fiber_stack_size) = ZEND_FIBER_DEFAULT_C_STACK_SIZE;
 	}
@@ -806,6 +807,10 @@ static void executor_globals_ctor(zend_executor_globals *executor_globals) /* {{
 	executor_globals->stack_limit = (void*)0;
 	executor_globals->stack_base = (void*)0;
 #endif
+#ifdef ZEND_MAX_EXECUTION_TIMERS
+	executor_globals->pid = 0;
+	executor_globals->oldact = (struct sigaction){0};
+#endif
 }
 /* }}} */
 
@@ -830,6 +835,7 @@ static void zend_new_thread_end_handler(THREAD_T thread_id) /* {{{ */
 #ifdef ZEND_CHECK_STACK_LIMIT
 	zend_call_stack_init();
 #endif
+	zend_max_execution_timer_init();
 }
 /* }}} */
 #endif
@@ -1184,6 +1190,7 @@ ZEND_API ZEND_COLD ZEND_NORETURN void _zend_bailout(const char *filename, uint32
 	CG(unclean_shutdown) = 1;
 	CG(active_class_entry) = NULL;
 	CG(in_compilation) = 0;
+	CG(memoize_mode) = 0;
 	EG(current_execute_data) = NULL;
 	LONGJMP(*EG(bailout), FAILURE);
 }
@@ -1279,17 +1286,36 @@ ZEND_API void zend_deactivate(void) /* {{{ */
 
 	zend_destroy_rsrc_list(&EG(regular_list));
 
+	/* See GH-8646: https://github.com/php/php-src/issues/8646
+	 *
+	 * Interned strings that hold class entries can get a corresponding slot in map_ptr for the CE cache.
+	 * map_ptr works like a bump allocator: there is a counter which increases to allocate the next slot in the map.
+	 *
+	 * For class name strings in non-opcache we have:
+	 *   - on startup: permanent + interned
+	 *   - on request: interned
+	 * For class name strings in opcache we have:
+	 *   - on startup: permanent + interned
+	 *   - on request: either not interned at all, which we can ignore because they won't get a CE cache entry
+	 *                 or they were already permanent + interned
+	 *                 or we get a new permanent + interned string in the opcache persistence code
+	 *
+	 * Notice that the map_ptr layout always has the permanent strings first, and the request strings after.
+	 * In non-opcache, a request string may get a slot in map_ptr, and that interned request string
+	 * gets destroyed at the end of the request. The corresponding map_ptr slot can thereafter never be used again.
+	 * This causes map_ptr to keep reallocating to larger and larger sizes.
+	 *
+	 * We solve it as follows:
+	 * We can check whether we had any interned request strings, which only happens in non-opcache.
+	 * If we have any, we reset map_ptr to the last permanent string.
+	 * We can't lose any permanent strings because of map_ptr's layout.
+	 */
+	if (zend_hash_num_elements(&CG(interned_strings)) > 0) {
+		zend_map_ptr_reset();
+	}
+
 #if GC_BENCH
-	fprintf(stderr, "GC Statistics\n");
-	fprintf(stderr, "-------------\n");
-	fprintf(stderr, "Runs:               %d\n", GC_G(gc_runs));
-	fprintf(stderr, "Collected:          %d\n", GC_G(collected));
-	fprintf(stderr, "Root buffer length: %d\n", GC_G(root_buf_length));
-	fprintf(stderr, "Root buffer peak:   %d\n\n", GC_G(root_buf_peak));
-	fprintf(stderr, "      Possible            Remove from  Marked\n");
-	fprintf(stderr, "        Root    Buffered     buffer     grey\n");
-	fprintf(stderr, "      --------  --------  -----------  ------\n");
-	fprintf(stderr, "ZVAL  %8d  %8d  %9d  %8d\n", GC_G(zval_possible_root), GC_G(zval_buffered), GC_G(zval_remove_from_buffer), GC_G(zval_marked_grey));
+	gc_bench_print();
 #endif
 }
 /* }}} */
@@ -1609,6 +1635,18 @@ ZEND_API ZEND_COLD ZEND_NORETURN void zend_error_noreturn(int type, const char *
 	va_end(args);
 	/* Should never reach this. */
 	abort();
+}
+
+ZEND_API ZEND_COLD ZEND_NORETURN void zend_strerror_noreturn(int type, int errn, const char *message)
+{
+#ifdef HAVE_STR_ERROR_R
+	char buf[1024];
+	strerror_r(errn, buf, sizeof(buf));
+#else
+	char *buf = strerror(errn);
+#endif
+
+	zend_error_noreturn(type, "%s: %s (%d)", message, buf, errn);
 }
 
 ZEND_API ZEND_COLD void zend_error_zstr(int type, zend_string *message) {

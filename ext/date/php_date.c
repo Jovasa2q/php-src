@@ -235,7 +235,7 @@ PHPAPI time_t php_time(void)
 
 #include "php_date_arginfo.h"
 
-static char* guess_timezone(const timelib_tzdb *tzdb);
+static const char* guess_timezone(const timelib_tzdb *tzdb);
 static void date_register_classes(void);
 /* }}} */
 
@@ -520,7 +520,7 @@ static timelib_tzinfo *php_date_parse_tzfile(const char *formal_tzname, const ti
 	return tzi;
 }
 
-timelib_tzinfo *php_date_parse_tzfile_wrapper(const char *formal_tzname, const timelib_tzdb *tzdb, int *dummy_error_code)
+static timelib_tzinfo *php_date_parse_tzfile_wrapper(const char *formal_tzname, const timelib_tzdb *tzdb, int *dummy_error_code)
 {
 	return php_date_parse_tzfile(formal_tzname, tzdb);
 }
@@ -549,7 +549,7 @@ static PHP_INI_MH(OnUpdate_date_timezone)
 /* }}} */
 
 /* {{{ Helper functions */
-static char* guess_timezone(const timelib_tzdb *tzdb)
+static const char* guess_timezone(const timelib_tzdb *tzdb)
 {
 	/* Checking whether timezone has been set with date_default_timezone_set() */
 	if (DATEG(timezone) && (strlen(DATEG(timezone))) > 0) {
@@ -573,15 +573,44 @@ static char* guess_timezone(const timelib_tzdb *tzdb)
 
 PHPAPI timelib_tzinfo *get_timezone_info(void)
 {
-	char *tz;
 	timelib_tzinfo *tzi;
 
-	tz = guess_timezone(DATE_TIMEZONEDB);
+	const char *tz = guess_timezone(DATE_TIMEZONEDB);
 	tzi = php_date_parse_tzfile(tz, DATE_TIMEZONEDB);
 	if (! tzi) {
 		zend_throw_error(date_ce_date_error, "Timezone database is corrupt. Please file a bug report as this should never happen");
 	}
 	return tzi;
+}
+
+static void update_property(zend_object *object, zend_string *key, zval *prop_val)
+{
+	if (ZSTR_LEN(key) > 0 && ZSTR_VAL(key)[0] == '\0') { // not public
+		const char *class_name, *prop_name;
+		size_t prop_name_len;
+
+		if (zend_unmangle_property_name_ex(key, &class_name, &prop_name, &prop_name_len) == SUCCESS) {
+			if (class_name[0] != '*') { // private
+				zend_string *cname;
+				zend_class_entry *ce;
+
+				cname = zend_string_init(class_name, strlen(class_name), 0);
+				ce = zend_lookup_class(cname);
+
+				if (ce) {
+					zend_update_property(ce, object, prop_name, prop_name_len, prop_val);
+				}
+
+				zend_string_release_ex(cname, 0);
+			} else { // protected
+				zend_update_property(object->ce, object, prop_name, prop_name_len, prop_val);
+			}
+		}
+		return;
+	}
+
+	// public
+	zend_update_property(object->ce, object, ZSTR_VAL(key), ZSTR_LEN(key), prop_val);
 }
 /* }}} */
 
@@ -607,7 +636,7 @@ static const char * const day_short_names[] = {
 	"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
 };
 
-static char *english_suffix(timelib_sll number)
+static const char *english_suffix(timelib_sll number)
 {
 	if (number >= 10 && number <= 19) {
 		return "th";
@@ -1621,7 +1650,7 @@ static void date_period_it_move_forward(zend_object_iterator *iter)
 	}
 
 	create_date_period_datetime(object->current, object->start_ce, &current_zv);
-	zend_string *property_name = zend_string_init("current", sizeof("current") - 1, 0);
+	zend_string *property_name = ZSTR_INIT_LITERAL("current", 0);
 	zend_std_write_property(&object->std, property_name, &current_zv, NULL);
 	zval_ptr_dtor(&current_zv);
 	zend_string_release(property_name);
@@ -1667,7 +1696,7 @@ static const zend_object_iterator_funcs date_period_it_funcs = {
 	NULL, /* get_gc */
 };
 
-zend_object_iterator *date_object_period_get_iterator(zend_class_entry *ce, zval *object, int by_ref) /* {{{ */
+static zend_object_iterator *date_object_period_get_iterator(zend_class_entry *ce, zval *object, int by_ref) /* {{{ */
 {
 	date_period_it *iterator;
 
@@ -2043,7 +2072,7 @@ static void php_timezone_to_string(php_timezone_obj *tzobj, zval *zv)
 	}
 }
 
-void date_timezone_object_to_hash(php_timezone_obj *tzobj, HashTable *props)
+static void date_timezone_object_to_hash(php_timezone_obj *tzobj, HashTable *props)
 {
 	zval zv;
 
@@ -2145,7 +2174,7 @@ static void date_interval_object_to_hash(php_interval_obj *intervalobj, HashTabl
 
 	/* Records whether this is a special relative interval that needs to be recreated from a string */
 	if (intervalobj->from_string) {
-		ZVAL_BOOL(&zv, (zend_bool)intervalobj->from_string);
+		ZVAL_BOOL(&zv, (bool)intervalobj->from_string);
 		zend_hash_str_update(props, "from_string", strlen("from_string"), &zv);
 		ZVAL_STR_COPY(&zv, intervalobj->date_string);
 		zend_hash_str_update(props, "date_string", strlen("date_string"), &zv);
@@ -2171,7 +2200,7 @@ static void date_interval_object_to_hash(php_interval_obj *intervalobj, HashTabl
 		ZVAL_FALSE(&zv);
 		zend_hash_str_update(props, "days", sizeof("days")-1, &zv);
 	}
-	ZVAL_BOOL(&zv, (zend_bool)intervalobj->from_string);
+	ZVAL_BOOL(&zv, (bool)intervalobj->from_string);
 	zend_hash_str_update(props, "from_string", strlen("from_string"), &zv);
 
 #undef PHP_DATE_INTERVAL_ADD_PROPERTY
@@ -2823,7 +2852,7 @@ static void restore_custom_datetime_properties(zval *object, HashTable *myht)
 		if (!prop_name || (Z_TYPE_P(prop_val) == IS_REFERENCE) || date_time_is_internal_property(prop_name)) {
 			continue;
 		}
-		add_property_zval_ex(object, ZSTR_VAL(prop_name), ZSTR_LEN(prop_name), prop_val);
+		update_property(Z_OBJ_P(object), prop_name, prop_val);
 	} ZEND_HASH_FOREACH_END();
 }
 
@@ -2948,7 +2977,7 @@ PHP_FUNCTION(date_get_last_errors)
 }
 /* }}} */
 
-void php_date_do_return_parsed_time(INTERNAL_FUNCTION_PARAMETERS, timelib_time *parsed_time, timelib_error_container *error) /* {{{ */
+static void php_date_do_return_parsed_time(INTERNAL_FUNCTION_PARAMETERS, timelib_time *parsed_time, timelib_error_container *error) /* {{{ */
 {
 	zval element;
 
@@ -3133,8 +3162,14 @@ static bool php_date_modify(zval *object, char *modify, size_t modify_len) /* {{
 		dateobj->time->us = tmp_time->us;
 	}
 
-	if (tmp_time->have_zone && tmp_time->zone_type == TIMELIB_ZONETYPE_OFFSET) {
-		timelib_set_timezone_from_offset(dateobj->time, tmp_time->z);
+	/* Reset timezone to UTC if we detect a "@<ts>" modification */
+	if (
+		tmp_time->y == 1970 && tmp_time->m == 1 && tmp_time->d == 1 &&
+		tmp_time->h == 0 && tmp_time->i == 0 && tmp_time->s == 0 && tmp_time->us == 0 &&
+		tmp_time->have_zone && tmp_time->zone_type == TIMELIB_ZONETYPE_OFFSET &&
+		tmp_time->z == 0 && tmp_time->dst == 0
+	) {
+		timelib_set_timezone_from_offset(dateobj->time, 0);
 	}
 
 	timelib_time_dtor(tmp_time);
@@ -3925,7 +3960,7 @@ static void restore_custom_datetimezone_properties(zval *object, HashTable *myht
 		if (!prop_name || (Z_TYPE_P(prop_val) == IS_REFERENCE) || date_timezone_is_internal_property(prop_name)) {
 			continue;
 		}
-		add_property_zval_ex(object, ZSTR_VAL(prop_name), ZSTR_LEN(prop_name), prop_val);
+		update_property(Z_OBJ_P(object), prop_name, prop_val);
 	} ZEND_HASH_FOREACH_END();
 }
 
@@ -4552,7 +4587,7 @@ static void restore_custom_dateinterval_properties(zval *object, HashTable *myht
 		if (!prop_name || (Z_TYPE_P(prop_val) == IS_REFERENCE) || date_interval_is_internal_property(prop_name)) {
 			continue;
 		}
-		add_property_zval_ex(object, ZSTR_VAL(prop_name), ZSTR_LEN(prop_name), prop_val);
+		update_property(Z_OBJ_P(object), prop_name, prop_val);
 	} ZEND_HASH_FOREACH_END();
 }
 
@@ -5552,7 +5587,7 @@ static void restore_custom_dateperiod_properties(zval *object, HashTable *myht)
 		if (!prop_name || (Z_TYPE_P(prop_val) == IS_REFERENCE) || date_period_is_internal_property(prop_name)) {
 			continue;
 		}
-		add_property_zval_ex(object, ZSTR_VAL(prop_name), ZSTR_LEN(prop_name), prop_val);
+		update_property(Z_OBJ_P(object), prop_name, prop_val);
 	} ZEND_HASH_FOREACH_END();
 }
 
