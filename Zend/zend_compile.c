@@ -8036,6 +8036,7 @@ static void zend_compile_class_decl(znode *result, zend_ast *ast, bool toplevel)
 
 	if (ce->ce_flags & ZEND_ACC_TYPE) {
 		zend_compile_type_type(ce, type_type_ast);
+		zend_type_add_interfaces(ce);
 		zend_type_register_handlers(ce);
 		zend_type_register_props(ce);
 	}
