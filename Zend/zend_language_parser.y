@@ -164,7 +164,7 @@ static YYSIZE_T zend_yytnamerr(char*, const char*);
 %token <ident> T_TRAIT         "'trait'"
 %token <ident> T_INTERFACE     "'interface'"
 %token <ident> T_ENUM          "'enum'"
-%token <ident> T_TYPE          "'type'"
+%token <ident> T_TYPE_ALIAS    "'type'"
 %token <ident> T_EXTENDS       "'extends'"
 %token <ident> T_IMPLEMENTS    "'implements'"
 %token <ident> T_NAMESPACE     "'namespace'"
@@ -279,7 +279,7 @@ static YYSIZE_T zend_yytnamerr(char*, const char*);
 %type <ast> attribute_decl attribute attributes attribute_group namespace_declaration_name
 %type <ast> match match_arm_list non_empty_match_arm_list match_arm match_arm_cond_list
 %type <ast> enum_declaration_statement enum_backing_type enum_case enum_case_expr
-%type <ast> type_declaration_statement type_type
+%type <ast> type_alias_declaration_statement type_alias_type
 %type <ast> function_name non_empty_member_modifiers
 
 %type <num> returns_ref function fn is_reference is_variadic property_modifiers
@@ -385,7 +385,7 @@ attributed_statement:
 	|	trait_declaration_statement			{ $$ = $1; }
 	|	interface_declaration_statement		{ $$ = $1; }
 	|	enum_declaration_statement			{ $$ = $1; }
-	|	type_declaration_statement			{ $$ = $1; }
+	|	type_alias_declaration_statement	{ $$ = $1; }
 ;
 
 top_statement:
@@ -655,13 +655,13 @@ enum_case_expr:
 	|	'=' expr { $$ = $2; }
 ;
 
-type_declaration_statement:
-		T_TYPE { $<num>$ = CG(zend_lineno); }
-		T_STRING backup_doc_comment '=' type_type ';'
-			{ $$ = zend_ast_create_decl(ZEND_AST_CLASS, ZEND_ACC_TYPE|ZEND_ACC_FINAL, $<num>2, $4, zend_ast_get_str($3), NULL, NULL, NULL, NULL, $6); }
+type_alias_declaration_statement:
+		T_TYPE_ALIAS { $<num>$ = CG(zend_lineno); }
+		T_STRING backup_doc_comment '=' type_alias_type ';'
+			{ $$ = zend_ast_create_decl(ZEND_AST_CLASS, ZEND_ACC_TYPE_ALIAS|ZEND_ACC_FINAL, $<num>2, $4, zend_ast_get_str($3), NULL, NULL, NULL, NULL, $6); }
 ;
 
-type_type:
+type_alias_type:
 		type_expr { $$ = $1; }
 ;
 

@@ -18,15 +18,15 @@
 
 #include "zend.h"
 #include "zend_API.h"
-#include "zend_type_arginfo.h"
+#include "zend_type_alias_arginfo.h"
 #include "zend_execute.h"
 
-ZEND_API zend_class_entry *zend_ce_type;
-ZEND_API zend_object_handlers zend_type_object_handlers;
+ZEND_API zend_class_entry *zend_ce_type_alias;
+ZEND_API zend_object_handlers zend_type_alias_object_handlers;
 
-static int zend_implement_type(zend_class_entry *interface, zend_class_entry *class_type)
+static int zend_implement_type_alias(zend_class_entry *interface, zend_class_entry *class_type)
 {
-	if (class_type->ce_flags & ZEND_ACC_TYPE) {
+	if (class_type->ce_flags & ZEND_ACC_TYPE_ALIAS) {
 		return SUCCESS;
 	}
 
@@ -37,17 +37,17 @@ static int zend_implement_type(zend_class_entry *interface, zend_class_entry *cl
 	return FAILURE;
 }
 
-void zend_register_type_ce(void)
+void zend_register_type_alias_ce(void)
 {
-	zend_ce_type = register_class_TypeAlias();
-	zend_ce_type->interface_gets_implemented = zend_implement_type;
+	zend_ce_type_alias = register_class_TypeAlias();
+	zend_ce_type_alias->interface_gets_implemented = zend_implement_type_alias;
 
-	memcpy(&zend_type_object_handlers, &std_object_handlers, sizeof(zend_object_handlers));
-	zend_type_object_handlers.clone_obj = NULL;
-	zend_type_object_handlers.compare = zend_objects_not_comparable;
+	memcpy(&zend_type_alias_object_handlers, &std_object_handlers, sizeof(zend_object_handlers));
+	zend_type_alias_object_handlers.clone_obj = NULL;
+	zend_type_alias_object_handlers.compare = zend_objects_not_comparable;
 }
 
-void zend_type_add_interfaces(zend_class_entry *ce)
+void zend_type_alias_add_interfaces(zend_class_entry *ce)
 {
 	uint32_t num_interfaces_before = ce->num_interfaces;
 
@@ -57,22 +57,22 @@ void zend_type_add_interfaces(zend_class_entry *ce)
 
 	ce->interface_names = erealloc(ce->interface_names, sizeof(zend_class_name) * ce->num_interfaces);
 
-	ce->interface_names[num_interfaces_before].name = zend_string_copy(zend_ce_type->name);
+	ce->interface_names[num_interfaces_before].name = zend_string_copy(zend_ce_type_alias->name);
 	ce->interface_names[num_interfaces_before].lc_name = ZSTR_INIT_LITERAL("typealias", 0);
 
-	ce->default_object_handlers = &zend_type_object_handlers;
+	ce->default_object_handlers = &zend_type_alias_object_handlers;
 }
 
-void zend_type_register_handlers(zend_class_entry *ce)
+void zend_type_alias_register_handlers(zend_class_entry *ce)
 {
-	memcpy(&zend_type_object_handlers, &std_object_handlers, sizeof(zend_object_handlers));
-	zend_type_object_handlers.clone_obj = NULL;
-	zend_type_object_handlers.compare = zend_objects_not_comparable;
+	memcpy(&zend_type_alias_object_handlers, &std_object_handlers, sizeof(zend_object_handlers));
+	zend_type_alias_object_handlers.clone_obj = NULL;
+	zend_type_alias_object_handlers.compare = zend_objects_not_comparable;
 
-	ce->default_object_handlers = &zend_type_object_handlers;
+	ce->default_object_handlers = &zend_type_alias_object_handlers;
 }
 
-void zend_type_register_props(zend_class_entry *ce)
+void zend_type_alias_register_props(zend_class_entry *ce)
 {
 	ce->ce_flags |= ZEND_ACC_NO_DYNAMIC_PROPERTIES;
 }

@@ -33,7 +33,7 @@
 #include "zend_inheritance.h"
 #include "zend_vm.h"
 #include "zend_enum.h"
-#include "zend_type.h"
+#include "zend_type_alias.h"
 #include "zend_observer.h"
 #include "zend_call_stack.h"
 
@@ -7922,17 +7922,17 @@ static void zend_compile_enum_backing_type(zend_class_entry *ce, zend_ast *enum_
 	zend_type_release(type, 0);
 }
 
-static void zend_compile_type_type(zend_class_entry *ce, zend_ast *type_type_ast)
+static void zend_compile_type_alias_type(zend_class_entry *ce, zend_ast *type_alias_ast)
 {
-	ZEND_ASSERT(ce->ce_flags & ZEND_ACC_TYPE);
-	zend_type type = zend_compile_typename(type_type_ast, 0);
+	ZEND_ASSERT(ce->ce_flags & ZEND_ACC_TYPE_ALIAS);
+	zend_type type_alias = zend_compile_typename(type_alias_ast, 0);
 
-	if (ZEND_TYPE_FULL_MASK(type) & (MAY_BE_VOID|MAY_BE_NEVER)) {
-		zend_string *str = zend_type_to_string(type);
+	if (ZEND_TYPE_FULL_MASK(type_alias) & (MAY_BE_VOID|MAY_BE_NEVER)) {
+		zend_string *str = zend_type_to_string(type_alias);
 		zend_error_noreturn(E_COMPILE_ERROR, "Type alias cannot have type %s", ZSTR_VAL(str));
 	}
 
-	ce->type_type = type;
+	ce->type_alias = type_alias;
 }
 
 static void zend_compile_class_decl(znode *result, zend_ast *ast, bool toplevel) /* {{{ */
@@ -7942,7 +7942,7 @@ static void zend_compile_class_decl(znode *result, zend_ast *ast, bool toplevel)
 	zend_ast *implements_ast = decl->child[1];
 	zend_ast *stmt_ast = decl->child[2];
 	zend_ast *enum_backing_type_ast = decl->child[4];
-	zend_ast *type_type_ast = decl->child[4];
+	zend_ast *type_alias_ast = decl->child[4];
 	zend_string *name, *lcname;
 	zend_class_entry *ce = zend_arena_alloc(&CG(arena), sizeof(zend_class_entry));
 	zend_op *opline;
@@ -8034,11 +8034,11 @@ static void zend_compile_class_decl(znode *result, zend_ast *ast, bool toplevel)
 		zend_enum_register_props(ce);
 	}
 
-	if (ce->ce_flags & ZEND_ACC_TYPE) {
-		zend_compile_type_type(ce, type_type_ast);
-		zend_type_add_interfaces(ce);
-		zend_type_register_handlers(ce);
-		zend_type_register_props(ce);
+	if (ce->ce_flags & ZEND_ACC_TYPE_ALIAS) {
+		zend_compile_type_alias_type(ce, type_alias_ast);
+		zend_type_alias_add_interfaces(ce);
+		zend_type_alias_register_handlers(ce);
+		zend_type_alias_register_props(ce);
 	}
 
 	zend_compile_stmt(stmt_ast);

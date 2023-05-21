@@ -16,8 +16,8 @@
    +----------------------------------------------------------------------+
 */
 
-#ifndef ZEND_TYPE_H
-#define ZEND_TYPE_H
+#ifndef ZEND_TYPE_ALIAS_H
+#define ZEND_TYPE_ALIAS_H
 
 #include "zend.h"
 
@@ -25,15 +25,15 @@
 
 BEGIN_EXTERN_C()
 
-extern ZEND_API zend_object_handlers zend_type_object_handlers;
-extern ZEND_API zend_class_entry *zend_ce_type;
+extern ZEND_API zend_object_handlers zend_type_alias_object_handlers;
+extern ZEND_API zend_class_entry *zend_ce_type_alias;
 
-void zend_register_type_ce(void);
-void zend_type_add_interfaces(zend_class_entry *ce);
+void zend_register_type_alias_ce(void);
+void zend_type_alias_add_interfaces(zend_class_entry *ce);
 
-void zend_type_register_handlers(zend_class_entry *ce);
-void zend_type_register_props(zend_class_entry *ce);
+void zend_type_alias_register_handlers(zend_class_entry *ce);
+void zend_type_alias_register_props(zend_class_entry *ce);
 
 END_EXTERN_C()
 
-#endif /* ZEND_TYPE_H */
+#endif /* ZEND_TYPE_ALIAS_H */

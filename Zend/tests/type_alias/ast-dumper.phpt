@@ -1,5 +1,5 @@
 --TEST--
-Type AST dumper
+Type alias AST dumper
 --FILE--
 <?php
 

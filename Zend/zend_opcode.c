@@ -430,8 +430,8 @@ ZEND_API void destroy_zend_class(zval *zv)
 			if (ce->backed_enum_table) {
 				zend_hash_release(ce->backed_enum_table);
 			}
-			if (ZEND_TYPE_IS_SET(ce->type_type)) {
-				zend_type_release(ce->type_type, 0);
+			if (ZEND_TYPE_IS_SET(ce->type_alias)) {
+				zend_type_release(ce->type_alias, 0);
 			}
 			if (ce->default_properties_table) {
 				zval *p = ce->default_properties_table;

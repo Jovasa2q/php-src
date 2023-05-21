@@ -1833,7 +1833,7 @@ tail_call:
 				smart_str_appends(str, "trait ");
 			} else if (decl->flags & ZEND_ACC_ENUM) {
 				smart_str_appends(str, "enum ");
-			} else if (decl->flags & ZEND_ACC_TYPE) {
+			} else if (decl->flags & ZEND_ACC_TYPE_ALIAS) {
 				smart_str_appends(str, "type ");
 				smart_str_appendl(str, ZSTR_VAL(decl->name), ZSTR_LEN(decl->name));
 				smart_str_appends(str, " = ");

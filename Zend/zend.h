@@ -219,7 +219,7 @@ struct _zend_class_entry {
 	uint32_t enum_backing_type;
 	HashTable *backed_enum_table;
 
-	zend_type type_type;
+	zend_type type_alias;
 
 	union {
 		struct {
