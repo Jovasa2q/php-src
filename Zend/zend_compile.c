@@ -33,6 +33,7 @@
 #include "zend_inheritance.h"
 #include "zend_vm.h"
 #include "zend_enum.h"
+#include "zend_type.h"
 #include "zend_observer.h"
 #include "zend_call_stack.h"
 
@@ -8035,6 +8036,8 @@ static void zend_compile_class_decl(znode *result, zend_ast *ast, bool toplevel)
 
 	if (ce->ce_flags & ZEND_ACC_TYPE) {
 		zend_compile_type_type(ce, type_type_ast);
+		zend_type_register_handlers(ce);
+		zend_type_register_props(ce);
 	}
 
 	zend_compile_stmt(stmt_ast);
