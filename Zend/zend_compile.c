@@ -7921,6 +7921,19 @@ static void zend_compile_enum_backing_type(zend_class_entry *ce, zend_ast *enum_
 	zend_type_release(type, 0);
 }
 
+static void zend_compile_type_type(zend_class_entry *ce, zend_ast *type_type_ast)
+{
+	ZEND_ASSERT(ce->ce_flags & ZEND_ACC_TYPE);
+	zend_type type = zend_compile_typename(type_type_ast, 0);
+
+	if (ZEND_TYPE_FULL_MASK(type) & (MAY_BE_VOID|MAY_BE_NEVER)) {
+		zend_string *str = zend_type_to_string(type);
+		zend_error_noreturn(E_COMPILE_ERROR, "Type cannot have type %s", ZSTR_VAL(str));
+	}
+
+	ce->type_type = type;
+}
+
 static void zend_compile_class_decl(znode *result, zend_ast *ast, bool toplevel) /* {{{ */
 {
 	zend_ast_decl *decl = (zend_ast_decl *) ast;
@@ -7928,6 +7941,7 @@ static void zend_compile_class_decl(znode *result, zend_ast *ast, bool toplevel)
 	zend_ast *implements_ast = decl->child[1];
 	zend_ast *stmt_ast = decl->child[2];
 	zend_ast *enum_backing_type_ast = decl->child[4];
+	zend_ast *type_type_ast = decl->child[4];
 	zend_string *name, *lcname;
 	zend_class_entry *ce = zend_arena_alloc(&CG(arena), sizeof(zend_class_entry));
 	zend_op *opline;
@@ -8017,6 +8031,10 @@ static void zend_compile_class_decl(znode *result, zend_ast *ast, bool toplevel)
 		}
 		zend_enum_add_interfaces(ce);
 		zend_enum_register_props(ce);
+	}
+
+	if (ce->ce_flags & ZEND_ACC_TYPE) {
+		zend_compile_type_type(ce, type_type_ast);
 	}
 
 	zend_compile_stmt(stmt_ast);
