@@ -443,6 +443,12 @@ class ReflectionClass implements Reflector
     public function getShortName(): string {}
 
     public function getAttributes(?string $name = null, int $flags = 0): array {}
+
+    /** @tentative-return-type */
+    public function isTypeAlias(): bool {}
+
+    /** @tentative-return-type */
+    public function getTypeAlias(): ?ReflectionType {}
 }
 
 class ReflectionObject extends ReflectionClass

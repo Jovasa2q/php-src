@@ -4926,6 +4926,13 @@ ZEND_METHOD(ReflectionClass, isEnum)
 	_class_check_flag(INTERNAL_FUNCTION_PARAM_PASSTHRU, ZEND_ACC_ENUM);
 }
 
+/* {{{ Returns whether this is a type alias */
+ZEND_METHOD(ReflectionClass, isTypeAlias)
+{
+	_class_check_flag(INTERNAL_FUNCTION_PARAM_PASSTHRU, ZEND_ACC_TYPE_ALIAS);
+}
+/* }}} */
+
 /* {{{ Returns whether this class is final */
 ZEND_METHOD(ReflectionClass, isFinal)
 {
@@ -5251,6 +5258,26 @@ ZEND_METHOD(ReflectionClass, getTraitAliases)
 	} else {
 		RETURN_EMPTY_ARRAY();
 	}
+}
+/* }}} */
+
+/* {{{ Returns the type this type alias represents */
+ZEND_METHOD(ReflectionClass, getTypeAlias)
+{
+	reflection_object *intern;
+	zend_class_entry *ce;
+
+	if (zend_parse_parameters_none() == FAILURE) {
+		RETURN_THROWS();
+	}
+
+	GET_REFLECTION_OBJECT_PTR(ce);
+
+	if (!ZEND_TYPE_IS_SET(ce->type_alias)) {
+		RETURN_NULL();
+	}
+
+	reflection_type_factory(ce->type_alias, return_value, 1);
 }
 /* }}} */
 
